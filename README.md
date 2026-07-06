@@ -4,6 +4,10 @@ A browser-based survivor game built with native JavaScript modules and Canvas 2D
 
 ## Run locally
 
+On Windows, double-click `Play Game.cmd` to start the local server and open the game in Firefox.
+
+Alternatively, start a local web server manually:
+
 Start a local web server from the project directory, then open:
 
 `http://127.0.0.1:8000/VampireSurvivorsClone.html`
