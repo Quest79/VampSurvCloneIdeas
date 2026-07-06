@@ -1978,6 +1978,8 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.setTransform(state.renderScale, 0, 0, state.renderScale, 0, 0);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
   drawStarfield();
   ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
   ctx.fillRect(0, 0, width, height);
@@ -2577,6 +2579,7 @@ function draw() {
   if (state.inventoryOpen) drawInventoryScreen();
 
   if (state.gameOver) {
+    ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
     ctx.fillRect(0, 0, width, height);
     fantasyPanel(width/2-340, height/2-130, 680, 260, '#8f3b3b');
@@ -2587,6 +2590,7 @@ function draw() {
     ctx.font = '20px Arial, sans-serif';
     ctx.fillText(`Score: ${state.score}  |  Wave: ${state.wave}`, width / 2, height / 2 + 22);
     ctx.fillText('Press R to restart', width / 2, height / 2 + 60);
+    ctx.restore();
   }
 
   if (state.paused) {
