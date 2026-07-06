@@ -238,6 +238,7 @@
       explosions: [],
       levelUpEffects: [],
       particles: [],
+      groundFires: [],
       stars: [],
       score: 0,
       wave: 1,
@@ -514,6 +515,26 @@
       { name: 'Fireball Gem', code: 'FB', slotType: 'gem', gemType: 'ability', abilityId: 'fireball', affinities: ['Spell', 'Projectile', 'AoE', 'Fire'], rarity: 'RARE', color: '#ff6738', description: 'Grants the ability to launch fireballs at nearby enemies.', stackable: false },
       { name: 'Fork', code: 'FK', slotType: 'gem', gemType: 'support', supportEffect: 'fork', affinities: ['Projectile'], rarity: 'RARE', color: '#8ee7ff', description: 'Compatible projectiles fork into two on hit.', stackable: false },
       { name: 'Pierce', code: 'PR', slotType: 'gem', gemType: 'support', supportEffect: 'pierce', affinities: ['Projectile'], rarity: 'RARE', color: '#d6a6ff', description: 'Compatible projectiles pierce one additional enemy.', stackable: false },
+      { name: 'Chain', code: 'CH', slotType: 'gem', gemType: 'support', supportEffect: 'chain', affinities: ['Projectile'], rarity: 'RARE', color: '#74dfff', description: 'Chains once to a nearby enemy. Chained hit deals 30% less damage.', stackable: false },
+      { name: 'Greater Volley', code: 'GV', slotType: 'gem', gemType: 'support', supportEffect: 'volley', affinities: ['Projectile'], rarity: 'RARE', color: '#a7e7ff', description: 'Fires two extra projectiles. Projectiles deal 20% less damage.', stackable: false },
+      { name: 'Homing', code: 'HM', slotType: 'gem', gemType: 'support', supportEffect: 'homing', affinities: ['Projectile'], rarity: 'RARE', color: '#89ffce', description: 'Projectiles seek enemies. Projectile speed is reduced by 15%.', stackable: false },
+      { name: 'Acceleration', code: 'AC', slotType: 'gem', gemType: 'support', supportEffect: 'acceleration', affinities: ['Projectile'], rarity: 'RARE', color: '#f7e06d', description: 'Projectiles gain speed and damage while traveling. Starts 15% weaker.', stackable: false },
+      { name: 'Ricochet', code: 'RCB', slotType: 'gem', gemType: 'support', supportEffect: 'ricochet', affinities: ['Projectile'], rarity: 'RARE', color: '#77b7ff', description: 'Projectiles bounce twice from arena edges. Deals 15% less damage.', stackable: false },
+      { name: 'Detonation', code: 'DT', slotType: 'gem', gemType: 'support', supportEffect: 'detonation', affinities: ['AoE'], rarity: 'RARE', color: '#ff805e', description: 'Impact damages nearby enemies. Direct-hit damage is 20% lower.', stackable: false },
+      { name: 'Aftershock', code: 'AS', slotType: 'gem', gemType: 'support', supportEffect: 'aftershock', affinities: ['AoE'], rarity: 'RARE', color: '#d88cff', description: 'Repeats the impact blast after a delay for 50% damage.', stackable: false },
+      { name: 'Expanding Blast', code: 'EB', slotType: 'gem', gemType: 'support', supportEffect: 'expanding', affinities: ['AoE'], rarity: 'RARE', color: '#ffb36b', description: 'Greatly increases impact radius. Blast damage is 25% lower.', stackable: false },
+      { name: 'Burning Ground', code: 'BG', slotType: 'gem', gemType: 'support', supportEffect: 'burningGround', affinities: ['Fire', 'AoE'], rarity: 'RARE', color: '#ff5e37', description: 'Leaves burning ground for 2 seconds. Cast speed is 10% slower.', stackable: false },
+      { name: 'Ignite', code: 'IG', slotType: 'gem', gemType: 'support', supportEffect: 'ignite', affinities: ['Fire'], rarity: 'RARE', color: '#ff4c35', description: 'Hits ignite enemies for damage over time. Direct damage is 10% lower.', stackable: false },
+      { name: 'Wildfire', code: 'WF', slotType: 'gem', gemType: 'support', supportEffect: 'wildfire', affinities: ['Fire'], rarity: 'RARE', color: '#ff9838', description: 'Ignited enemies burst on death. Ignite duration is 25% shorter.', stackable: false },
+      { name: 'Cinderburst', code: 'CB', slotType: 'gem', gemType: 'support', supportEffect: 'cinderburst', affinities: ['Fire', 'Projectile'], rarity: 'RARE', color: '#ffc15a', description: 'Kills launch three embers. Embers deal 40% less damage.', stackable: false },
+      { name: 'Echo Cast', code: 'EC', slotType: 'gem', gemType: 'support', supportEffect: 'echo', affinities: ['Spell'], rarity: 'RARE', color: '#bca7ff', description: 'Repeats the spell after 0.35 seconds for 60% damage.', stackable: false },
+      { name: 'Overcharge', code: 'OC', slotType: 'gem', gemType: 'support', supportEffect: 'overcharge', affinities: ['Spell'], rarity: 'RARE', color: '#ff73ca', description: '75% more damage and larger projectiles. 40% slower cast speed.', stackable: false },
+      { name: 'Rapid Casting', code: 'RA', slotType: 'gem', gemType: 'support', supportEffect: 'rapid', affinities: ['Spell'], rarity: 'RARE', color: '#62f0da', description: '30% faster cast speed. Deals 20% less damage.', stackable: false },
+      { name: 'Blood Magic', code: 'BM', slotType: 'gem', gemType: 'support', supportEffect: 'bloodMagic', affinities: ['Spell'], rarity: 'RARE', color: '#e24b67', description: '70% more damage but costs 4 health per cast.', stackable: false },
+      { name: 'Orbit', code: 'OR', slotType: 'gem', gemType: 'support', supportEffect: 'orbit', affinities: ['Projectile', 'Spell'], rarity: 'RARE', color: '#79a8ff', description: 'Projectiles orbit briefly before launching. 15% slower cast speed.', stackable: false },
+      { name: 'Return', code: 'RT', slotType: 'gem', gemType: 'support', supportEffect: 'return', affinities: ['Projectile'], rarity: 'RARE', color: '#88ffc8', description: 'Projectiles reverse toward the player near expiration. 15% less damage.', stackable: false },
+      { name: 'Split on Death', code: 'SD', slotType: 'gem', gemType: 'support', supportEffect: 'splitDeath', affinities: ['Projectile'], rarity: 'RARE', color: '#ffe18a', description: 'Kills split into two weaker projectiles. Split shots cannot split again.', stackable: false },
+      { name: 'Black Hole', code: 'BH', slotType: 'gem', gemType: 'support', supportEffect: 'blackHole', affinities: ['AoE', 'Spell'], rarity: 'EPIC', color: '#9b67ff', description: 'Impact pulls nearby enemies inward. Deals 20% less damage.', stackable: false },
       { name: 'Rail Core', code: 'RC', slotType: 'weapon', rarity: 'EPIC', color: '#ff5f78', description: '+10% projectile speed.', apply: () => { state.player.bulletSpeedMult *= 1.10; } },
       { name: 'Nova Chamber', code: 'NC', slotType: 'offhand', rarity: 'EPIC', color: '#ffe66b', description: '+1 nova projectile burst.', apply: () => { state.player.specialAttackCount += 1; } }
     ];
@@ -1153,15 +1174,14 @@
       state.enemies = [];
       state.orbs = [];
       state.items = [];
+      state.groundFires = [];
       const starterGear = inventoryLoot.find((item) => item.code === 'NC5');
       const starterFireballGem = inventoryLoot.find((item) => item.code === 'FB');
-      const starterForkGem = inventoryLoot.find((item) => item.code === 'FK');
-      const starterPierceGem = inventoryLoot.find((item) => item.code === 'PR');
+      const starterSupportGems = inventoryLoot.filter((item) => item.gemType === 'support');
       state.inventory = [
         { ...starterGear, sockets: [...starterGear.sockets], count: 1 },
         { ...starterFireballGem, affinities: [...starterFireballGem.affinities], count: 1 },
-        { ...starterForkGem, affinities: [...starterForkGem.affinities], count: 1 },
-        { ...starterPierceGem, affinities: [...starterPierceGem.affinities], count: 1 }
+        ...starterSupportGems.map((gem) => ({ ...gem, affinities: [...gem.affinities], count: 1 }))
       ];
       Object.keys(state.equipment).forEach((slot) => { state.equipment[slot] = null; });
       state.moduleSlots = [null, null, null];
@@ -1293,6 +1313,74 @@
           maxAlpha: 0.32,
           color: i % 3 === 0 ? 'rgba(255,225,110,' : (i % 2 ? 'rgba(255,75,20,' : 'rgba(255,145,35,')
         });
+      }
+    }
+
+    function damageEnemiesInRadius(x, y, radius, damage, ignoredEnemy = null) {
+      state.enemies.forEach((enemy) => {
+        if (enemy === ignoredEnemy || getDistance(enemy, { x, y }) > radius + enemy.radius) return;
+        enemy.health -= damage;
+        enemy.hitShake = 0.12;
+        spawnImpact(enemy.x, enemy.y, 'rgba(255,105,25,');
+      });
+    }
+
+    function applyFireballSupportImpact(bullet, enemy) {
+      const blastRadius = bullet.expanding ? 155 : 88;
+      if (bullet.detonation || bullet.expanding) damageEnemiesInRadius(bullet.x, bullet.y, blastRadius, bullet.damage * (bullet.expanding ? 0.375 : 0.5), enemy);
+      if (bullet.aftershock) {
+        const x = bullet.x, y = bullet.y, damage = bullet.damage * 0.5;
+        setTimeout(() => {
+          if (state.gameOver) return;
+          spawnFireballHitFX(x, y);
+          damageEnemiesInRadius(x, y, blastRadius, damage);
+        }, 320);
+      }
+      if (bullet.burningGround) state.groundFires.push({ x: bullet.x, y: bullet.y, radius: bullet.expanding ? 105 : 72, life: 2, tick: 0, damage: bullet.damage * 0.16 });
+      if (bullet.ignite) {
+        enemy.burnTime = bullet.wildfire ? 2.25 : 3;
+        enemy.burnDps = Math.max(enemy.burnDps || 0, bullet.damage * 0.32);
+        enemy.wildfire = Boolean(bullet.wildfire);
+      }
+      if (bullet.blackHole) {
+        state.enemies.forEach((other) => {
+          if (other === enemy) return;
+          const dx = bullet.x - other.x, dy = bullet.y - other.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          if (distance < 190) {
+            other.x += (dx / distance) * Math.min(55, distance * 0.35);
+            other.y += (dy / distance) * Math.min(55, distance * 0.35);
+          }
+        });
+      }
+      if (bullet.chainRemaining > 0) {
+        const next = state.enemies.filter((candidate) => candidate !== enemy && getDistance(candidate, bullet) < 260)
+          .sort((a, b) => getDistance(a, bullet) - getDistance(b, bullet))[0];
+        if (next) {
+          const angle = Math.atan2(next.y - bullet.y, next.x - bullet.x);
+          state.bullets.push({ ...bullet, vx: Math.cos(angle) * bullet.speed, vy: Math.sin(angle) * bullet.speed, damage: bullet.damage * 0.7, pierce: 0, life: 0.9, maxLife: 0.9, chainRemaining: bullet.chainRemaining - 1, supportForkCount: 0, hasForked: true, ignoreEnemy: enemy });
+        }
+      }
+    }
+
+    function spawnSupportedProjectilesOnKill(bullet, enemy) {
+      const spawnShots = (count, damageMult, colorFireball = true) => {
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + Math.random() * 0.35;
+          const speed = 300;
+          state.bullets.push({
+            x: enemy.x, y: enemy.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+            speed, radius: 5, damage: Math.max(1, bullet.damage * damageMult), pierce: 0,
+            life: 0.85, maxLife: 0.85, owner: 'player', fireball: colorFireball,
+            hasForked: true, supportForkCount: 0, splitDeath: false, ignoreEnemy: enemy
+          });
+        }
+      };
+      if (bullet.splitDeath) spawnShots(2, 0.6);
+      if (bullet.cinderburst) spawnShots(3, 0.6);
+      if (bullet.wildfire && enemy.wildfire) {
+        spawnFireballHitFX(enemy.x, enemy.y);
+        damageEnemiesInRadius(enemy.x, enemy.y, 105, bullet.damage * 0.55, enemy);
       }
     }
 
@@ -1431,7 +1519,7 @@
       if (state.time - state.lastShot > 1.0 * (state.player.attackCooldownMult || 1)) {
         if (shootProjectile()) state.lastShot = state.time;
       }
-      if (hasEquippedAbility('fireball') && state.time - state.lastFireball > 1.6) {
+      if (hasEquippedAbility('fireball') && state.time - state.lastFireball > getFireballCooldown()) {
         if (shootFireball()) {
           state.lastFireball = state.time;
           playFireballSound();
@@ -1488,6 +1576,38 @@
 
       for (let index = state.bullets.length - 1; index >= 0; index--) {
         const bullet = state.bullets[index];
+        if (typeof bullet.life === 'number') {
+          bullet.life -= delta;
+          if (bullet.life <= 0) {
+            state.bullets.splice(index, 1);
+            continue;
+          }
+        }
+        if (bullet.orbitTime > 0) {
+          bullet.orbitTime -= delta;
+          bullet.orbitAngle = (bullet.orbitAngle ?? Math.atan2(bullet.vy, bullet.vx)) + delta * 9;
+          bullet.x = state.player.x + Math.cos(bullet.orbitAngle) * 46;
+          bullet.y = state.player.y + Math.sin(bullet.orbitAngle) * 46;
+          if (bullet.fireball) spawnFireballTrail(bullet);
+          if (bullet.orbitTime > 0) continue;
+          const orbitTarget = state.enemies.includes(bullet.homingTarget) ? bullet.homingTarget : state.enemies[0];
+          const launchAngle = orbitTarget ? Math.atan2(orbitTarget.y - bullet.y, orbitTarget.x - bullet.x) : bullet.orbitAngle;
+          bullet.vx = Math.cos(launchAngle) * bullet.speed;
+          bullet.vy = Math.sin(launchAngle) * bullet.speed;
+        }
+        if (bullet.accelerating) {
+          const acceleration = 1 + delta * 0.65;
+          bullet.vx *= acceleration;
+          bullet.vy *= acceleration;
+          bullet.speed = Math.min(850, (bullet.speed || 330) * acceleration);
+          bullet.damage *= 1 + delta * 0.22;
+        }
+        if (bullet.returning && !bullet.didReturn && bullet.maxLife && bullet.life < bullet.maxLife * 0.45) {
+          bullet.didReturn = true;
+          const returnAngle = Math.atan2(state.player.y - bullet.y, state.player.x - bullet.x);
+          bullet.vx = Math.cos(returnAngle) * bullet.speed;
+          bullet.vy = Math.sin(returnAngle) * bullet.speed;
+        }
         // homing behavior for heat-seeking bullets
         if (bullet.homing) {
           let nearest = state.enemies.includes(bullet.homingTarget) ? bullet.homingTarget : null;
@@ -1544,13 +1664,26 @@
         }
 
         if (bullet.x < -20 || bullet.x > width + 20 || bullet.y < -20 || bullet.y > height + 20) {
-          state.bullets.splice(index, 1);
+          if (bullet.ricochets > 0) {
+            if (bullet.x < -20 || bullet.x > width + 20) bullet.vx *= -1;
+            if (bullet.y < -20 || bullet.y > height + 20) bullet.vy *= -1;
+            bullet.x = clamp(bullet.x, -18, width + 18);
+            bullet.y = clamp(bullet.y, -18, height + 18);
+            bullet.ricochets -= 1;
+          } else {
+            state.bullets.splice(index, 1);
+          }
         }
       }
 
       for (let enemyIndex = state.enemies.length - 1; enemyIndex >= 0; enemyIndex--) {
         const enemy = state.enemies[enemyIndex];
         enemy.hitShake = Math.max(0, (enemy.hitShake || 0) - delta);
+        if (enemy.burnTime > 0) {
+          enemy.burnTime -= delta;
+          enemy.health = Math.max(1, enemy.health - (enemy.burnDps || 0) * delta);
+          if (Math.random() < delta * 12) spawnImpact(enemy.x, enemy.y, 'rgba(255,85,20,');
+        }
         enemy.haloTimer = (enemy.haloTimer ?? (5 + Math.random() * 55)) - delta;
         enemy.haloPulse = Math.max(0, (enemy.haloPulse || 0) - delta / 1.35);
         if (enemy.haloTimer <= 0) {
@@ -1603,6 +1736,7 @@
             enemy.hitShake = 0.14;
             spawnImpact(bullet.x, bullet.y, bullet.fireball ? 'rgba(255,85,25,' : (enemy.boss ? 'rgba(205,45,255,' : 'rgba(255,210,90,'));
             if (bullet.fireball) spawnFireballHitFX(bullet.x, bullet.y);
+            if (bullet.fireball) applyFireballSupportImpact(bullet, enemy);
             state.popupTexts.push({
               x: enemy.x,
               y: enemy.y - enemy.radius - 10,
@@ -1634,6 +1768,7 @@
               }
             }
             if (enemy.health <= 0) {
+              if (bullet.fireball) spawnSupportedProjectilesOnKill(bullet, enemy);
               state.score += enemy.boss ? 50 : 10;
               const xpValue = enemy.boss ? 250 : 5;
               const shouldDropOrb = enemy.boss || Math.random() < 0.8;
@@ -1666,6 +1801,24 @@
             }
           }
         }
+      }
+
+      for (let fireIndex = state.groundFires.length - 1; fireIndex >= 0; fireIndex--) {
+        const fire = state.groundFires[fireIndex];
+        fire.life -= delta;
+        fire.tick += delta;
+        if (fire.tick >= 0.25) {
+          fire.tick %= 0.25;
+          state.enemies.forEach((enemy) => {
+            if (getDistance(enemy, fire) < fire.radius + enemy.radius) enemy.health = Math.max(1, enemy.health - fire.damage);
+          });
+        }
+        if (Math.random() < delta * 22) {
+          const angle = Math.random() * Math.PI * 2;
+          const radius = Math.random() * fire.radius;
+          state.particles.push({ x: fire.x + Math.cos(angle) * radius, y: fire.y + Math.sin(angle) * radius, vx: 0, vy: -25 - Math.random() * 35, radius: 1 + Math.random() * 2.5, life: 0.25 + Math.random() * 0.25, alpha: 0.16, maxAlpha: 0.16, color: 'rgba(255,90,20,' });
+        }
+        if (fire.life <= 0) state.groundFires.splice(fireIndex, 1);
       }
 
       state.orbs.forEach((orb, orbIndex) => {
@@ -1947,7 +2100,16 @@
       return true;
     }
 
-    function shootFireball() {
+    function getFireballCooldown() {
+      let cooldown = 1.6;
+      if (getAbilitySupportCount('fireball', 'overcharge')) cooldown *= 1.4;
+      if (getAbilitySupportCount('fireball', 'rapid')) cooldown *= 0.7;
+      if (getAbilitySupportCount('fireball', 'burningGround')) cooldown *= 1.1;
+      if (getAbilitySupportCount('fireball', 'orbit')) cooldown *= 1.15;
+      return cooldown;
+    }
+
+    function shootFireball(isEcho = false) {
       if (state.levelUpActive) return false;
       const shootDistanceMult = state.tripleShootDistance ? 3 : 1;
       const target = state.enemies
@@ -1955,16 +2117,52 @@
         .sort((a, b) => getDistance(a, state.player) - getDistance(b, state.player))[0];
       if (!target) return false;
       const angle = Math.atan2(target.y - state.player.y, target.x - state.player.x);
-      const speed = 330;
-      const forkSupports = getAbilitySupportCount('fireball', 'fork');
-      const pierceSupports = getAbilitySupportCount('fireball', 'pierce');
-      state.bullets.push({
-        x: state.player.x, y: state.player.y,
-        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-        speed, radius: 9, damage: Math.max(4, state.player.bulletDamage * 4),
-        pierce: pierceSupports, life: 2 * shootDistanceMult, owner: 'player', fireball: true,
-        supportForkCount: forkSupports > 0 ? 1 : 0
+      const support = (effect) => getAbilitySupportCount('fireball', effect);
+      const homing = support('homing') > 0;
+      const volley = support('volley') > 0;
+      const acceleration = support('acceleration') > 0;
+      const overcharge = support('overcharge') > 0;
+      const rapid = support('rapid') > 0;
+      const bloodMagic = support('bloodMagic') > 0;
+      let damageMult = isEcho ? 0.6 : 1;
+      if (volley) damageMult *= 0.8;
+      if (acceleration) damageMult *= 0.85;
+      if (support('ricochet')) damageMult *= 0.85;
+      if (support('detonation')) damageMult *= 0.8;
+      if (support('ignite')) damageMult *= 0.9;
+      if (overcharge) damageMult *= 1.75;
+      if (rapid) damageMult *= 0.8;
+      if (bloodMagic) damageMult *= 1.7;
+      if (support('return')) damageMult *= 0.85;
+      if (support('blackHole')) damageMult *= 0.8;
+      if (bloodMagic && !isEcho) {
+        state.player.health = Math.max(1, state.player.health - 4);
+        state.popupTexts.push({ x: state.player.x, y: state.player.y - 30, text: '-4 BLOOD', alpha: 1, life: 0.8, color: '#e24b67' });
+      }
+      const speed = 330 * (homing ? 0.85 : 1);
+      const offsets = volley ? [-0.2, 0, 0.2] : [0];
+      offsets.forEach((offset) => {
+        const shotAngle = angle + offset;
+        const life = 2 * shootDistanceMult;
+        state.bullets.push({
+          x: state.player.x, y: state.player.y,
+          vx: Math.cos(shotAngle) * speed, vy: Math.sin(shotAngle) * speed,
+          speed, radius: overcharge ? 12 : 9,
+          damage: Math.max(1, state.player.bulletDamage * 4 * damageMult),
+          pierce: support('pierce'), life, maxLife: life, owner: 'player', fireball: true,
+          supportForkCount: support('fork') > 0 ? 1 : 0,
+          chainRemaining: support('chain') > 0 ? 1 : 0,
+          homing, homingTarget: target, homingStrength: 6,
+          accelerating: acceleration, ricochets: support('ricochet') > 0 ? 2 : 0,
+          detonation: support('detonation') > 0, aftershock: support('aftershock') > 0,
+          expanding: support('expanding') > 0, burningGround: support('burningGround') > 0,
+          ignite: support('ignite') > 0, wildfire: support('wildfire') > 0,
+          cinderburst: support('cinderburst') > 0, returning: support('return') > 0,
+          splitDeath: support('splitDeath') > 0, blackHole: support('blackHole') > 0,
+          orbitTime: support('orbit') > 0 ? 0.45 : 0
+        });
       });
+      if (!isEcho && support('echo')) setTimeout(() => { if (!state.gameOver) shootFireball(true); }, 350);
       return true;
     }
 
@@ -2412,6 +2610,18 @@
         ctx.fillRect(0, 0, width, height);
         ctx.restore();
       }
+
+      state.groundFires.forEach((fire) => {
+        const alpha = Math.min(0.16, fire.life * 0.08);
+        const gradient = ctx.createRadialGradient(fire.x, fire.y, 0, fire.x, fire.y, fire.radius);
+        gradient.addColorStop(0, `rgba(255,120,25,${alpha})`);
+        gradient.addColorStop(0.55, `rgba(255,55,15,${alpha * 0.7})`);
+        gradient.addColorStop(1, 'rgba(90,10,0,0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(fire.x, fire.y, fire.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
 
       ctx.save();
       ctx.fillStyle = '#0f0';
