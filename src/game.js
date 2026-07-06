@@ -2404,6 +2404,12 @@ function draw() {
     }
   });
 
+  ctx.save();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.direction = 'ltr';
   fantasyPanel(14, 14, 360, 218, '#9b7134');
   ctx.fillStyle = '#d8ad5c';
   ctx.font = '700 13px "Segoe UI", Arial, sans-serif';
@@ -2466,6 +2472,7 @@ function draw() {
   ctx.fillStyle = '#fff';
   ctx.font = '700 12px "Segoe UI", Arial, sans-serif';
   ctx.fillText(`${state.player.xp} / ${state.player.xpToNext}  ESSENCE`, barX + 9, xpY + 14);
+  ctx.restore();
 
   if (state.levelUpActive) {
     ctx.fillStyle = 'rgba(5, 3, 7, 0.9)';
