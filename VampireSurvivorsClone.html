@@ -15,7 +15,7 @@
       justify-content: center;
       background: radial-gradient(ellipse at 50% 10%, #241320 0%, #0b080d 46%, #020203 100%);
       color: #f0f0f0;
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
     }
     #gameCanvas {
       display: block;
@@ -23,7 +23,7 @@
       height: 1080px;
       max-width: 100vw;
       max-height: 100vh;
-      image-rendering: pixelated;
+      image-rendering: auto;
       background: radial-gradient(circle at 50% 30%, #111 0%, #040404 40%, #000 100%);
       box-shadow: 0 0 0 1px #5d4023, 0 0 45px rgba(0,0,0,.95), 0 0 90px rgba(87,15,35,.28);
     }
@@ -71,7 +71,7 @@
   </style>
 </head>
 <body>
-  <div id="instructions">Move <b>WASD / Arrows</b><br>Skill Tree <b>T</b><br>Loadout <b>I</b><br>Pause <b>Esc</b><br><span style="color:#806f5e;font-style:italic">Survive the endless night</span></div>
+  <div id="instructions">Move <b>WASD / Arrows</b><br>Skill Tree <b>T</b><br>Loadout <b>I</b><br>Pause <b>Esc</b><br>Reset Run <b>End</b><br><span style="color:#806f5e;font-style:italic">Survive the endless night</span></div>
   <canvas id="gameCanvas"></canvas>
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -247,10 +247,15 @@
       spawnTimer: 0,
       lastBossLevel: 0,
       bossActive: false,
+      nullweaveDropped: false,
       gameOver: false,
       paused: false,
       showEnemyHealth: true,
       enemyHealthToggleRect: null,
+      triplePickupPull: true,
+      pickupPullToggleRect: null,
+      tripleShootDistance: true,
+      shootDistanceToggleRect: null,
       renderScale: 1,
       renderScaleSliderRect: null,
       draggingRenderScale: false,
@@ -506,7 +511,9 @@
       { name: 'Ghost Lens', code: 'GL', slotType: 'head', rarity: 'RARE', color: '#ff70df', description: '+8% enemy detection range.', apply: () => { state.player.detectionRange *= 1.08; } },
       { name: 'Grav Coil', code: 'GC', slotType: 'gloves', rarity: 'RARE', color: '#ffb84d', description: '+8% crystal pull range and strength.', apply: () => { state.player.orbPullMult *= 1.08; } },
       { name: 'Nullweave Carapace', code: 'NC5', slotType: 'chest', rarity: 'RARE', color: '#77d7c4', description: 'Blank chestpiece with five empty sockets.', stackable: false, sockets: [null, null, null, null, null] },
-      { name: 'Fireball Gem', code: 'FB', slotType: 'gem', gemType: 'ability', abilityId: 'fireball', rarity: 'RARE', color: '#ff6738', description: 'Grants the ability to launch fireballs at nearby enemies.', stackable: false },
+      { name: 'Fireball Gem', code: 'FB', slotType: 'gem', gemType: 'ability', abilityId: 'fireball', affinities: ['Spell', 'Projectile', 'AoE', 'Fire'], rarity: 'RARE', color: '#ff6738', description: 'Grants the ability to launch fireballs at nearby enemies.', stackable: false },
+      { name: 'Fork', code: 'FK', slotType: 'gem', gemType: 'support', supportEffect: 'fork', affinities: ['Projectile'], rarity: 'RARE', color: '#8ee7ff', description: 'Compatible projectiles fork into two on hit.', stackable: false },
+      { name: 'Pierce', code: 'PR', slotType: 'gem', gemType: 'support', supportEffect: 'pierce', affinities: ['Projectile'], rarity: 'RARE', color: '#d6a6ff', description: 'Compatible projectiles pierce one additional enemy.', stackable: false },
       { name: 'Rail Core', code: 'RC', slotType: 'weapon', rarity: 'EPIC', color: '#ff5f78', description: '+10% projectile speed.', apply: () => { state.player.bulletSpeedMult *= 1.10; } },
       { name: 'Nova Chamber', code: 'NC', slotType: 'offhand', rarity: 'EPIC', color: '#ffe66b', description: '+1 nova projectile burst.', apply: () => { state.player.specialAttackCount += 1; } }
     ];
@@ -520,6 +527,8 @@
     };
 
     function createBossLoot(x, y) {
+      if (state.nullweaveDropped) return null;
+      state.nullweaveDropped = true;
       const template = inventoryLoot.find((item) => item.code === 'NC5');
       return { ...template, x, y, radius: 12, picked: false };
     }
@@ -557,7 +566,7 @@
         existingStack.count = (existingStack.count || 1) + 1;
       } else {
         const normalizedSlotType = item.activate || item.deactivate ? 'module' : item.slotType;
-        const inventoryItem = { name: item.name, code: item.code, slotType: normalizedSlotType || 'module', gemType: item.gemType, abilityId: item.abilityId, rarity: item.rarity, color: item.color, description: item.description, count: 1, stackable: item.stackable !== false, activate: item.activate, deactivate: item.deactivate, sockets: item.sockets ? [...item.sockets] : undefined };
+        const inventoryItem = { name: item.name, code: item.code, slotType: normalizedSlotType || 'module', gemType: item.gemType, abilityId: item.abilityId, supportEffect: item.supportEffect, affinities: item.affinities ? [...item.affinities] : undefined, rarity: item.rarity, color: item.color, description: item.description, count: 1, stackable: item.stackable !== false, activate: item.activate, deactivate: item.deactivate, sockets: item.sockets ? [...item.sockets] : undefined };
         if (emptySlot >= 0) state.inventory[emptySlot] = inventoryItem;
         else state.inventory.push(inventoryItem);
       }
@@ -623,6 +632,12 @@
     });
 
     window.addEventListener('keydown', (event) => {
+      if (event.key === 'End' && !event.repeat) {
+        event.preventDefault();
+        resetGame();
+        playUIClick('close');
+        return;
+      }
       if ((event.key === 'i' || event.key === 'I') && !event.repeat && !state.gameOver) {
         if (state.socketDragSource) {
           state.socketDragSource.gear.sockets[state.socketDragSource.index] = state.socketDragSource.gem;
@@ -679,13 +694,27 @@
       const clickX = (event.clientX - rect.left) * scaleX;
       const clickY = (event.clientY - rect.top) * scaleY;
 
-      if (state.paused && state.enemyHealthToggleRect) {
-        const toggle = state.enemyHealthToggleRect;
-        if (
-          clickX >= toggle.x && clickX <= toggle.x + toggle.w &&
-          clickY >= toggle.y && clickY <= toggle.y + toggle.h
+      if (state.paused) {
+        const healthToggle = state.enemyHealthToggleRect;
+        const pullToggle = state.pickupPullToggleRect;
+        const shootToggle = state.shootDistanceToggleRect;
+        if (healthToggle &&
+          clickX >= healthToggle.x && clickX <= healthToggle.x + healthToggle.w &&
+          clickY >= healthToggle.y && clickY <= healthToggle.y + healthToggle.h
         ) {
           state.showEnemyHealth = !state.showEnemyHealth;
+          playUIClick('toggle');
+        } else if (pullToggle &&
+          clickX >= pullToggle.x && clickX <= pullToggle.x + pullToggle.w &&
+          clickY >= pullToggle.y && clickY <= pullToggle.y + pullToggle.h
+        ) {
+          state.triplePickupPull = !state.triplePickupPull;
+          playUIClick('toggle');
+        } else if (shootToggle &&
+          clickX >= shootToggle.x && clickX <= shootToggle.x + shootToggle.w &&
+          clickY >= shootToggle.y && clickY <= shootToggle.y + shootToggle.h
+        ) {
+          state.tripleShootDistance = !state.tripleShootDistance;
           playUIClick('toggle');
         }
         return;
@@ -1126,9 +1155,13 @@
       state.items = [];
       const starterGear = inventoryLoot.find((item) => item.code === 'NC5');
       const starterFireballGem = inventoryLoot.find((item) => item.code === 'FB');
+      const starterForkGem = inventoryLoot.find((item) => item.code === 'FK');
+      const starterPierceGem = inventoryLoot.find((item) => item.code === 'PR');
       state.inventory = [
         { ...starterGear, sockets: [...starterGear.sockets], count: 1 },
-        { ...starterFireballGem, count: 1 }
+        { ...starterFireballGem, affinities: [...starterFireballGem.affinities], count: 1 },
+        { ...starterForkGem, affinities: [...starterForkGem.affinities], count: 1 },
+        { ...starterPierceGem, affinities: [...starterPierceGem.affinities], count: 1 }
       ];
       Object.keys(state.equipment).forEach((slot) => { state.equipment[slot] = null; });
       state.moduleSlots = [null, null, null];
@@ -1152,6 +1185,7 @@
       state.player.hitShake = 0;
       state.lastBossLevel = 0;
       state.bossActive = false;
+      state.nullweaveDropped = false;
       state.levelUpActive = false;
       state.skillPoints = 0;
       state.gameOver = false;
@@ -1221,6 +1255,43 @@
           x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
           radius: 1.2 + Math.random() * 2.2, life: 0.18 + Math.random() * 0.25,
           alpha: 1, color
+        });
+      }
+    }
+
+    function spawnFireballTrail(bullet) {
+      if (state.particles.length >= 1800 || Math.random() > 0.78) return;
+      const speed = Math.hypot(bullet.vx, bullet.vy) || 1;
+      const backX = -bullet.vx / speed;
+      const backY = -bullet.vy / speed;
+      state.particles.push({
+        x: bullet.x + backX * bullet.radius * 0.8 + (Math.random() - 0.5) * 5,
+        y: bullet.y + backY * bullet.radius * 0.8 + (Math.random() - 0.5) * 5,
+        vx: backX * (25 + Math.random() * 35) + (Math.random() - 0.5) * 18,
+        vy: backY * (25 + Math.random() * 35) + (Math.random() - 0.5) * 18,
+        radius: 1.5 + Math.random() * 2.8,
+        life: 0.18 + Math.random() * 0.2,
+        alpha: 0.1,
+        maxAlpha: 0.1,
+        color: Math.random() < 0.5 ? 'rgba(255,105,20,' : 'rgba(255,205,70,'
+      });
+    }
+
+    function spawnFireballHitFX(x, y) {
+      const room = Math.max(0, 1800 - state.particles.length);
+      const count = Math.min(22, room);
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 55 + Math.random() * 230;
+        state.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - Math.random() * 35,
+          radius: 1.5 + Math.random() * 4.5,
+          life: 0.25 + Math.random() * 0.45,
+          alpha: 0.32,
+          maxAlpha: 0.32,
+          color: i % 3 === 0 ? 'rgba(255,225,110,' : (i % 2 ? 'rgba(255,75,20,' : 'rgba(255,145,35,')
         });
       }
     }
@@ -1398,12 +1469,13 @@
                 if (!enemy.boss) spawnMobDeathEffect(enemy.x, enemy.y, enemy.elite);
                 if (enemy.boss) {
                   const item = createBossLoot(enemy.x, enemy.y);
-                  state.items.push(item);
+                  if (item) state.items.push(item);
                   state.bossActive = false;
-                  spawnBossCookEffect(enemy.x, enemy.y, item);
+                  if (item) spawnBossCookEffect(enemy.x, enemy.y, item);
                   spawnBossExplosion(enemy.x, enemy.y);
                 } else {
-                  state.items.push(createBossLoot(enemy.x, enemy.y));
+                  const item = createBossLoot(enemy.x, enemy.y);
+                  if (item) state.items.push(item);
                 }
                 maybeDropFireRateModule(enemy.x, enemy.y);
                 state.enemies.splice(enemyIndex, 1);
@@ -1458,6 +1530,7 @@
             });
           }
         }
+        if (bullet.fireball) spawnFireballTrail(bullet);
         bullet.x += bullet.vx * delta;
         bullet.y += bullet.vy * delta;
 
@@ -1529,6 +1602,7 @@
             enemy.health -= bullet.damage;
             enemy.hitShake = 0.14;
             spawnImpact(bullet.x, bullet.y, bullet.fireball ? 'rgba(255,85,25,' : (enemy.boss ? 'rgba(205,45,255,' : 'rgba(255,210,90,'));
+            if (bullet.fireball) spawnFireballHitFX(bullet.x, bullet.y);
             state.popupTexts.push({
               x: enemy.x,
               y: enemy.y - enemy.radius - 10,
@@ -1538,9 +1612,12 @@
               color: '#ffd166'
             });
             bullet.pierce -= 1;
-            if (!bullet.hasForked && state.player.forkCount > 0) {
+            const supportForkCount = bullet.supportForkCount || 0;
+            const totalForkCount = Math.max(supportForkCount, state.player.forkCount || 0);
+            if (!bullet.hasForked && totalForkCount > 0) {
+              bullet.hasForked = true;
               const baseAngle = Math.atan2(bullet.vy, bullet.vx);
-              const forkCount = state.player.forkCount;
+              const forkCount = totalForkCount;
               for (let fork = 0; fork < forkCount; fork++) {
                 const side = fork % 2 === 0 ? 1 : -1;
                 const tier = Math.floor(fork / 2) + 1;
@@ -1551,7 +1628,8 @@
                   vx: Math.cos(forkAngle) * forkSpeed, vy: Math.sin(forkAngle) * forkSpeed,
                   speed: forkSpeed, radius: Math.max(2, bullet.radius * 0.9),
                   damage: Math.max(1, Math.ceil(bullet.damage * 0.65)), pierce: 0, life: 0.8,
-                  owner: 'player', homing: false, hasForked: true, ignoreEnemy: enemy
+                  owner: 'player', homing: false, hasForked: true, ignoreEnemy: enemy,
+                  fireball: Boolean(bullet.fireball), supportForkCount: 0
                 });
               }
             }
@@ -1568,12 +1646,13 @@
               if (!enemy.boss) spawnMobDeathEffect(enemy.x, enemy.y, enemy.elite);
               if (enemy.boss) {
                 const item = createBossLoot(enemy.x, enemy.y);
-                state.items.push(item);
+                if (item) state.items.push(item);
                 state.bossActive = false;
-                spawnBossCookEffect(enemy.x, enemy.y, item);
+                if (item) spawnBossCookEffect(enemy.x, enemy.y, item);
                 spawnBossExplosion(enemy.x, enemy.y);
               } else {
-                state.items.push(createBossLoot(enemy.x, enemy.y));
+                const item = createBossLoot(enemy.x, enemy.y);
+                if (item) state.items.push(item);
               }
               maybeDropFireRateModule(enemy.x, enemy.y);
               if (bullet.pierce < 0) {
@@ -1611,11 +1690,12 @@
         const dx = state.player.x - orb.x;
         const dy = state.player.y - orb.y;
         const dist = Math.hypot(dx, dy) || 1;
-        const attractRange = 150 * state.player.orbPullMult;
+        const pullOptionMult = state.triplePickupPull ? 5 : 1;
+        const attractRange = 150 * state.player.orbPullMult * pullOptionMult;
         const driftDamping = 0.90;
 
         if (dist < attractRange) {
-          const pull = ((attractRange - dist) / attractRange) * 28000 * state.player.orbPullMult;
+          const pull = ((attractRange - dist) / attractRange) * 28000 * state.player.orbPullMult * pullOptionMult;
           orb.vx += (dx / dist) * pull * delta;
           orb.vy += (dy / dist) * pull * delta;
         }
@@ -1732,7 +1812,7 @@
         particle.vx *= 0.92;
         particle.vy *= 0.92;
         particle.life -= delta;
-        particle.alpha = Math.max(0, particle.life / 0.8);
+        particle.alpha = (particle.maxAlpha ?? 1) * Math.max(0, particle.life / 0.8);
         if (particle.life <= 0) state.particles.splice(i, 1);
       }
 
@@ -1744,7 +1824,27 @@
 
       for (let itemIndex = state.items.length - 1; itemIndex >= 0; itemIndex--) {
         const item = state.items[itemIndex];
-        const dist = getDistance(item, state.player);
+        const dx = state.player.x - item.x;
+        const dy = state.player.y - item.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const pullOptionMult = state.triplePickupPull ? 5 : 1;
+        const attractRange = 150 * state.player.orbPullMult * pullOptionMult;
+        item.vx = item.vx || 0;
+        item.vy = item.vy || 0;
+        if (dist < attractRange) {
+          const pull = ((attractRange - dist) / attractRange) * 28000 * state.player.orbPullMult * pullOptionMult;
+          item.vx += (dx / dist) * pull * delta;
+          item.vy += (dy / dist) * pull * delta;
+        }
+        item.vx *= 0.90;
+        item.vy *= 0.90;
+        const itemSpeed = Math.hypot(item.vx, item.vy);
+        if (itemSpeed > 900) {
+          item.vx = (item.vx / itemSpeed) * 900;
+          item.vy = (item.vy / itemSpeed) * 900;
+        }
+        item.x += item.vx * delta;
+        item.y += item.vy * delta;
         if (dist < item.radius + state.player.radius) {
           collectInventoryItem(item);
           item.picked = true;
@@ -1793,8 +1893,9 @@
 
     function shootProjectile() {
       if (state.levelUpActive) return false;
+      const shootDistanceMult = state.tripleShootDistance ? 3 : 1;
       const targets = state.enemies.filter(
-        (enemy) => getDistance(enemy, state.player) <= state.player.detectionRange
+        (enemy) => getDistance(enemy, state.player) <= state.player.detectionRange * shootDistanceMult
       ).sort(
         (a, b) => getDistance(a, state.player) - getDistance(b, state.player)
       );
@@ -1816,7 +1917,7 @@
           radius: 2.73,
           damage: state.player.bulletDamage,
           pierce: state.player.pierce,
-          life: 1.2,
+          life: 1.2 * shootDistanceMult,
           owner: 'player',
           homing: state.player.heatSeeking,
           homingTarget: target,
@@ -1838,7 +1939,7 @@
             radius: 3.5,
             damage: Math.max(1, Math.floor(state.player.bulletDamage / 2)),
             pierce: 0,
-            life: 0.9,
+            life: 0.9 * shootDistanceMult,
             owner: 'player'
           });
         }
@@ -1848,17 +1949,21 @@
 
     function shootFireball() {
       if (state.levelUpActive) return false;
+      const shootDistanceMult = state.tripleShootDistance ? 3 : 1;
       const target = state.enemies
-        .filter((enemy) => getDistance(enemy, state.player) <= state.player.detectionRange)
+        .filter((enemy) => getDistance(enemy, state.player) <= state.player.detectionRange * shootDistanceMult)
         .sort((a, b) => getDistance(a, state.player) - getDistance(b, state.player))[0];
       if (!target) return false;
       const angle = Math.atan2(target.y - state.player.y, target.x - state.player.x);
       const speed = 330;
+      const forkSupports = getAbilitySupportCount('fireball', 'fork');
+      const pierceSupports = getAbilitySupportCount('fireball', 'pierce');
       state.bullets.push({
         x: state.player.x, y: state.player.y,
         vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
         speed, radius: 9, damage: Math.max(4, state.player.bulletDamage * 4),
-        pierce: 1, life: 2, owner: 'player', fireball: true
+        pierce: pierceSupports, life: 2 * shootDistanceMult, owner: 'player', fireball: true,
+        supportForkCount: forkSupports > 0 ? 1 : 0
       });
       return true;
     }
@@ -1902,7 +2007,7 @@
       g.addColorStop(0, active ? '#63313a' : '#34272d'); g.addColorStop(1, active ? '#291018' : '#151217');
       ctx.fillStyle=g; ctx.fillRect(x,y,w,h); ctx.strokeStyle=active?'#d2a75a':'#725d43'; ctx.lineWidth=3; ctx.strokeRect(x,y,w,h);
       ctx.strokeStyle='rgba(255,225,158,.22)'; ctx.lineWidth=1; ctx.strokeRect(x+6,y+6,w-12,h-12);
-      if(label){ctx.fillStyle=active?'#f4dfae':'#c1b7a0';ctx.font='bold 20px Georgia, serif';ctx.textAlign='center';ctx.fillText(label,x+w/2,y+h/2+7)}
+      if(label){ctx.fillStyle=active?'#f4dfae':'#c1b7a0';ctx.font='600 20px "Segoe UI", Arial, sans-serif';ctx.textAlign='center';ctx.fillText(label,x+w/2,y+h/2+7)}
       ctx.restore();
     }
 
@@ -2032,6 +2137,21 @@
       return getEquippedGems().some((gem) => gem.gemType === 'ability' && gem.abilityId === abilityId);
     }
 
+    function getAbilitySupportCount(abilityId, supportEffect) {
+      let count = 0;
+      Object.values(state.equipment).forEach((gear) => {
+        if (!gear || !gear.sockets) return;
+        const skillGem = gear.sockets.find((gem) => gem && gem.gemType === 'ability' && gem.abilityId === abilityId);
+        if (!skillGem) return;
+        const skillAffinities = new Set(skillGem.affinities || []);
+        gear.sockets.forEach((gem) => {
+          if (!gem || gem.gemType !== 'support' || gem.supportEffect !== supportEffect) return;
+          if ((gem.affinities || []).some((affinity) => skillAffinities.has(affinity))) count += 1;
+        });
+      });
+      return count;
+    }
+
     function getModuleLayout() {
       const inventoryLayout = getInventoryLayout();
       return [9, 10, 11].map((column, index) => ({
@@ -2146,7 +2266,7 @@
       fantasyPanel(panelX, panelY, panelW, panelH, '#35b9d0');
       ctx.textAlign = 'center';
       ctx.fillStyle = '#bff7ff'; ctx.shadowColor = '#38dfff'; ctx.shadowBlur = 10;
-      ctx.font = 'bold 40px Georgia, serif'; ctx.fillText('LOADOUT', width / 2, panelY + 54);
+      ctx.font = '700 40px "Segoe UI", Arial, sans-serif'; ctx.fillText('LOADOUT', width / 2, panelY + 54);
       ctx.shadowBlur = 0; ctx.font = '15px Arial, sans-serif'; ctx.fillStyle = '#75aeb9';
       ctx.fillText('DRAG CYBERWARE INTO A COMPATIBLE EQUIPMENT SLOT', width / 2, panelY + 80);
 
@@ -2204,7 +2324,7 @@
 
       ctx.strokeStyle = 'rgba(55,185,208,0.42)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(panelX + 48, 756); ctx.lineTo(panelX + panelW - 48, 756); ctx.stroke();
-      ctx.fillStyle = '#bff7ff'; ctx.font = 'bold 24px Georgia, serif'; ctx.textAlign = 'left';
+      ctx.fillStyle = '#bff7ff'; ctx.font = '700 24px "Segoe UI", Arial, sans-serif'; ctx.textAlign = 'left';
       ctx.fillText('CYBERWARE VAULT', panelX + 78, 786);
       const occupiedSlots = state.inventory.reduce((total, item) => total + (item ? 1 : 0), 0);
       ctx.fillStyle = '#75aeb9'; ctx.font = '13px Arial'; ctx.textAlign = 'right';
@@ -2229,7 +2349,8 @@
           : (state.inventoryHoverIndex >= 0 ? state.inventory[state.inventoryHoverIndex] : null)));
       if (hoveredItem && state.inventoryDragIndex < 0 && !state.equipmentDragSlot && state.moduleDragIndex < 0 && !state.socketDragSource) {
         const hasSockets = Boolean(hoveredItem.sockets && hoveredItem.sockets.length);
-        const tipW = 340, tipH = hasSockets ? 142 : 110;
+        const hasAffinities = Boolean(hoveredItem.affinities && hoveredItem.affinities.length);
+        const tipW = 420, tipH = 110 + (hasAffinities ? 24 : 0) + (hasSockets ? 32 : 0);
         const tipX = Math.min(width - tipW - 18, Math.max(18, state.inventoryMouseX + 18));
         const tipY = Math.min(height - tipH - 18, Math.max(18, state.inventoryMouseY + 18));
         const rarityColor = tooltipRarityColors[(hoveredItem.rarity || 'COMMON').toUpperCase()] || hoveredItem.color || '#9b7134';
@@ -2243,15 +2364,23 @@
         ctx.strokeStyle = 'rgba(239,202,126,0.16)'; ctx.lineWidth = 1; ctx.strokeRect(tipX + 12, tipY + 12, tipW - 24, tipH - 24);
         ctx.restore();
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        ctx.fillStyle = '#f0dfbd'; ctx.font = 'bold 15px Georgia, serif'; ctx.fillText(hoveredItem.name.toUpperCase(), tipX + 22, tipY + 31);
+        ctx.fillStyle = '#f0dfbd'; ctx.font = '700 15px "Segoe UI", Arial, sans-serif'; ctx.fillText(hoveredItem.name.toUpperCase(), tipX + 22, tipY + 31);
         ctx.strokeStyle = rarityColor; ctx.globalAlpha = 0.42; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(tipX + 22, tipY + 40); ctx.lineTo(tipX + tipW - 22, tipY + 40); ctx.stroke(); ctx.globalAlpha = 1;
-        ctx.fillStyle = rarityColor; ctx.font = 'bold 10px Georgia, serif';
-        ctx.fillText(`${hoveredItem.rarity}  //  ${(hoveredItem.slotType || 'module').toUpperCase()}  //  x${hoveredItem.count || 1}`, tipX + 22, tipY + 57);
-        ctx.fillStyle = '#bbae93'; ctx.font = '12px Georgia, serif'; ctx.fillText(hoveredItem.description, tipX + 22, tipY + 81);
+        ctx.fillStyle = rarityColor; ctx.font = '700 10px "Segoe UI", Arial, sans-serif';
+        const gemRole = hoveredItem.gemType ? ` ${hoveredItem.gemType.toUpperCase()}` : '';
+        const countLabel = hoveredItem.stackable === false || hoveredItem.slotType === 'gem' ? '' : `  //  x${hoveredItem.count || 1}`;
+        ctx.fillText(`${hoveredItem.rarity}  //  ${(hoveredItem.slotType || 'module').toUpperCase()}${gemRole}${countLabel}`, tipX + 22, tipY + 57);
+        if (hasAffinities) {
+          ctx.fillStyle = '#8ee7ff'; ctx.font = '700 10px "Segoe UI", Arial, sans-serif';
+          ctx.fillText(`AFFINITIES  //  ${hoveredItem.affinities.join('  /  ')}`, tipX + 22, tipY + 78);
+        }
+        ctx.fillStyle = '#bbae93'; ctx.font = '12px "Segoe UI", Arial, sans-serif';
+        ctx.fillText(hoveredItem.description, tipX + 22, tipY + (hasAffinities ? 102 : 81));
         if (hasSockets) {
-          ctx.fillStyle = '#8f806d'; ctx.font = 'bold 10px Georgia, serif'; ctx.fillText('SLOTS', tipX + 22, tipY + 112);
-          const socketSize = 15, socketGap = 7, socketStartX = tipX + 72, socketY = tipY + 100;
+          const socketOffset = hasAffinities ? 24 : 0;
+          ctx.fillStyle = '#8f806d'; ctx.font = '700 10px "Segoe UI", Arial, sans-serif'; ctx.fillText('SLOTS', tipX + 22, tipY + 112 + socketOffset);
+          const socketSize = 15, socketGap = 7, socketStartX = tipX + 72, socketY = tipY + 100 + socketOffset;
           hoveredItem.sockets.forEach((socket, index) => {
             const socketX = socketStartX + index * (socketSize + socketGap);
             ctx.fillStyle = socket ? (socket.color || rarityColor) : 'rgba(5,4,7,0.95)';
@@ -2687,29 +2816,29 @@
 
       fantasyPanel(14, 14, 360, 218, '#9b7134');
       ctx.fillStyle = '#d8ad5c';
-      ctx.font = 'bold 13px Georgia, serif';
+      ctx.font = '700 13px "Segoe UI", Arial, sans-serif';
       ctx.fillText('THE NIGHT ENDURES', 32, 43);
       ctx.strokeStyle = 'rgba(184,137,63,.38)';
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(32, 53); ctx.lineTo(356, 53); ctx.stroke();
       ctx.fillStyle = '#c0b39a';
-      ctx.font = '16px Georgia, serif';
+      ctx.font = '16px "Segoe UI", Arial, sans-serif';
       ctx.fillText('SCORE', 32, 80);
       ctx.fillText('WAVE', 194, 80);
       ctx.fillStyle = '#f0dfbd';
-      ctx.font = 'bold 22px Georgia, serif';
+      ctx.font = '700 22px "Segoe UI", Arial, sans-serif';
       ctx.fillText(`${state.score}`, 92, 80);
       ctx.fillText(`${state.wave}`, 250, 80);
       ctx.fillStyle = '#c0b39a';
-      ctx.font = '16px Georgia, serif';
+      ctx.font = '16px "Segoe UI", Arial, sans-serif';
       ctx.fillText(`LEVEL  ${state.player.level}`, 32, 108);
       const aps = 1 / (1.0 * (state.player.attackCooldownMult || 1));
       ctx.fillText(`ATTACK  ${aps.toFixed(2)}/s`, 194, 108);
       ctx.fillStyle = state.skillPoints > 0 ? '#e8bd64' : '#aa9f8d';
-      ctx.font = 'bold 16px Georgia, serif';
+      ctx.font = '700 16px "Segoe UI", Arial, sans-serif';
       ctx.fillText(`SKILL POINTS  ${state.skillPoints}`, 32, 137);
       ctx.fillStyle = '#806f5e';
-      ctx.font = '13px Georgia, serif';
+      ctx.font = '13px "Segoe UI", Arial, sans-serif';
       ctx.fillText('[ T ] OPEN TREE', 232, 137);
 
       const barX = 32;
@@ -2731,7 +2860,7 @@
       ctx.fillStyle = healthGradient;
       ctx.fillRect(barX + 1, healthY + 1, Math.max(2, (barW - 2) * healthRatio), barH - 2);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px Georgia, serif';
+      ctx.font = '700 12px "Segoe UI", Arial, sans-serif';
       ctx.fillText(`${state.player.health} / ${state.player.maxHealth}  VITALITY`, barX + 9, healthY + 14);
 
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -2745,7 +2874,7 @@
       ctx.fillStyle = xpGradient;
       ctx.fillRect(barX + 1, xpY + 1, Math.max(2, (barW - 2) * xpRatio), barH - 2);
       ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px Georgia, serif';
+      ctx.font = '700 12px "Segoe UI", Arial, sans-serif';
       ctx.fillText(`${state.player.xp} / ${state.player.xpToNext}  ESSENCE`, barX + 9, xpY + 14);
 
       if (state.levelUpActive) {
@@ -2758,7 +2887,7 @@
         const atlasPanelH = 1250;
         fantasyPanel(atlasPanelX,atlasPanelY,atlasPanelW,atlasPanelH,'#9f7136');
         ctx.fillStyle = '#ead7aa';
-        ctx.font = 'bold 42px Georgia, serif';
+        ctx.font = '700 42px "Segoe UI", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('ATLAS OF THE NIGHT', width / 2, 90);
         ctx.font = '20px Arial, sans-serif';
@@ -2832,12 +2961,12 @@
           gem.addColorStop(0,available?'#3c342a':level?'#18303a':'#162127');gem.addColorStop(1,'#02070a');
           ctx.fillStyle=gem;ctx.beginPath();ctx.arc(0,0,radius-4,0,Math.PI*2);ctx.fill();
           ctx.fillStyle=available?'#efc47d':level?'#d8b47a':'#a89983';ctx.shadowBlur=5;
-          ctx.font=`${node.mini?16:22}px Georgia,serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.font=`${node.mini?16:22}px "Segoe UI", Arial, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
           ctx.fillText(node.title.split(' ').map(w=>w[0]).join('').slice(0,2),0,1);
           ctx.restore();
           ctx.textBaseline='alphabetic';ctx.textAlign='center';ctx.fillStyle=available?'#ead19b':'#a99b83';
-          ctx.font=`${node.mini?12:15}px Georgia,serif`;ctx.fillText(node.title,cx,cy+radius+28);
-          ctx.font='12px Georgia,serif';ctx.fillStyle='#9a8b77';ctx.fillText(`${level} / ${node.maxLevel}`,cx,cy+radius+45);
+          ctx.font=`${node.mini?12:15}px "Segoe UI", Arial, sans-serif`;ctx.fillText(node.title,cx,cy+radius+28);
+          ctx.font='12px "Segoe UI", Arial, sans-serif';ctx.fillStyle='#9a8b77';ctx.fillText(`${level} / ${node.maxLevel}`,cx,cy+radius+45);
         });
 
         const hovered = skillTree[state.skillHoverIndex];
@@ -2849,9 +2978,9 @@
           tipX=Math.max(atlasPanelX+42,Math.min(tipX,atlasPanelX+atlasPanelW-tipW-42));
           tipY=Math.max(atlasPanelY+42,Math.min(tipY,atlasPanelY+atlasPanelH-tipH-42));
           fantasyPanel(tipX,tipY,tipW,tipH,canPurchaseSkill(hovered)?'#bd8540':'#59483a');
-          ctx.textAlign='left';ctx.fillStyle='#ead19b';ctx.font='bold 20px Georgia,serif';ctx.fillText(hovered.title,tipX+24,tipY+34);
-          ctx.fillStyle='#a99d8b';ctx.font='14px Georgia,serif';wrapText(ctx,hovered.description,tipX+24,tipY+60,tipW-48,18);
-          ctx.fillStyle='#d39c4d';ctx.font='12px Georgia,serif';ctx.fillText(`RANK ${hovered.level||0} / ${hovered.maxLevel}  •  CLICK TO INVEST`,tipX+24,tipY+106);
+          ctx.textAlign='left';ctx.fillStyle='#ead19b';ctx.font='700 20px "Segoe UI", Arial, sans-serif';ctx.fillText(hovered.title,tipX+24,tipY+34);
+          ctx.fillStyle='#a99d8b';ctx.font='14px "Segoe UI", Arial, sans-serif';wrapText(ctx,hovered.description,tipX+24,tipY+60,tipW-48,18);
+          ctx.fillStyle='#d39c4d';ctx.font='12px "Segoe UI", Arial, sans-serif';ctx.fillText(`RANK ${hovered.level||0} / ${hovered.maxLevel}  •  CLICK TO INVEST`,tipX+24,tipY+106);
         }
 
         ctx.textAlign = 'start';
@@ -2864,7 +2993,7 @@
         ctx.fillRect(0, 0, width, height);
         fantasyPanel(width/2-340, height/2-130, 680, 260, '#8f3b3b');
         ctx.fillStyle = '#d9b36c';
-        ctx.font = 'bold 42px Georgia, serif';
+        ctx.font = '700 42px "Segoe UI", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('GAME OVER', width / 2, height / 2 - 20);
         ctx.font = '20px Arial, sans-serif';
@@ -2876,12 +3005,12 @@
         ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
         ctx.fillRect(0, 0, width, height);
         const panelW = 600;
-        const panelH = 430;
+        const panelH = 600;
         const panelX = width / 2 - panelW / 2;
         const panelY = height / 2 - panelH / 2;
         fantasyPanel(panelX, panelY, panelW, panelH, '#ad7d39');
         ctx.fillStyle = '#ead7aa';
-        ctx.font = 'bold 52px Georgia, serif';
+        ctx.font = '700 52px "Segoe UI", Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('PAUSED', width / 2, panelY + 72);
         ctx.font = 'bold 25px Arial, sans-serif';
@@ -2893,12 +3022,18 @@
         const toggleY = panelY + 146;
         state.enemyHealthToggleRect = { x: toggleX, y: toggleY, w: toggleW, h: toggleH };
         fantasyButton(toggleX, toggleY, toggleW, toggleH, state.showEnemyHealth, `ENEMY HEALTH  ·  ${state.showEnemyHealth ? 'ON' : 'OFF'}`);
+        const pullToggleY = panelY + 218;
+        state.pickupPullToggleRect = { x: toggleX, y: pullToggleY, w: toggleW, h: toggleH };
+        fantasyButton(toggleX, pullToggleY, toggleW, toggleH, state.triplePickupPull, `5x PICKUP PULL  -  ${state.triplePickupPull ? 'ON' : 'OFF'}`);
+        const shootToggleY = panelY + 290;
+        state.shootDistanceToggleRect = { x: toggleX, y: shootToggleY, w: toggleW, h: toggleH };
+        fantasyButton(toggleX, shootToggleY, toggleW, toggleH, state.tripleShootDistance, `3x SHOOT DISTANCE  -  ${state.tripleShootDistance ? 'ON' : 'OFF'}`);
         ctx.fillStyle = '#c8c8c8';
-        ctx.fillText('Rendering resolution', width / 2, panelY + 254);
+        ctx.fillText('Rendering resolution', width / 2, panelY + 398);
 
         const sliderW = 410;
         const sliderX = width / 2 - sliderW / 2;
-        const sliderY = panelY + 294;
+        const sliderY = panelY + 438;
         state.renderScaleSliderRect = { x: sliderX, y: sliderY, w: sliderW };
         ctx.strokeStyle = '#76768a';
         ctx.lineWidth = 8;
@@ -2924,10 +3059,12 @@
         ctx.fillText(`${Math.round(state.renderScale * 100)}%`, width / 2, sliderY + 38);
         ctx.fillText('200%', sliderX + sliderW, sliderY + 38);
         ctx.fillStyle = '#c8c8c8';
-        ctx.fillText('Press Esc to resume', width / 2, panelY + 398);
+        ctx.fillText('Press Esc to resume', width / 2, panelY + 568);
         ctx.textAlign = 'start';
       } else {
         state.enemyHealthToggleRect = null;
+        state.pickupPullToggleRect = null;
+        state.shootDistanceToggleRect = null;
         state.renderScaleSliderRect = null;
         state.draggingRenderScale = false;
       }
@@ -2962,11 +3099,14 @@
         spawnOrbSparkles(orb);
         if (enemy.boss) {
           const item = createBossLoot(enemy.x, enemy.y);
-          state.items.push(item); state.bossActive = false;
-          spawnBossCookEffect(enemy.x, enemy.y, item); spawnBossExplosion(enemy.x, enemy.y);
+          if (item) state.items.push(item);
+          state.bossActive = false;
+          if (item) spawnBossCookEffect(enemy.x, enemy.y, item);
+          spawnBossExplosion(enemy.x, enemy.y);
         } else {
           spawnOrbParticles(enemy.x, enemy.y); spawnMobDeathEffect(enemy.x, enemy.y, enemy.elite);
-          state.items.push(createBossLoot(enemy.x, enemy.y));
+          const item = createBossLoot(enemy.x, enemy.y);
+          if (item) state.items.push(item);
         }
         maybeDropFireRateModule(enemy.x, enemy.y);
         state.enemies.splice(i, 1);
